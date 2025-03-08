@@ -1,5 +1,4 @@
-const axios = require('axios');
-const cheerio = require('cheerio');
+const puppeteer = require('puppeteer');
 const TelegramBot = require('node-telegram-bot-api');
 
 // Replace with your bot token from BotFather
@@ -11,34 +10,51 @@ async function getStudentResult(registrationNumber, firstName) {
     const url = `https://sw.ministry.et/student-result/${registrationNumber}?first_name=${firstName}&qr=`;
 
     try {
-        // Fetch the page
-        const response = await axios.get(url);
+        // Launch Puppeteer browser instance
+        const browser = await puppeteer.launch({
+            headless: true, // You can set it to false for debugging to see the browser window
+        });
+        const page = await browser.newPage();
 
-        // Load the HTML into Cheerio for parsing
-        const $ = cheerio.load(response.data);
+        // Navigate to the result URL
+        await page.goto(url, { waitUntil: 'domcontentloaded' });
 
-        // Example selectors (you may need to adjust these based on actual HTML structure)
-        const studentName = $('.student-name').text().trim();
-        const studentAge = $('.student-age').text().trim();
-        const studentSchool = $('.student-school').text().trim();
-        const studentCourses = $('.courses-list').text().trim();
+        // Wait for the page to load fully (adjust this selector to match the result container)
+        await page.waitForSelector('.student-result'); // Update this with the correct selector if necessary
 
-        // Check if we found the information
-        if (!studentName || !studentAge || !studentSchool) {
+        // Extract student details from the page
+        const studentData = await page.evaluate(() => {
+            const studentName = document.querySelector('.student-name') ? document.querySelector('.student-name').innerText.trim() : 'N/A';
+            const studentAge = document.querySelector('.student-age') ? document.querySelector('.student-age').innerText.trim() : 'N/A';
+            const studentSchool = document.querySelector('.student-school') ? document.querySelector('.student-school').innerText.trim() : 'N/A';
+            const studentCourses = Array.from(document.querySelectorAll('.courses-list li')).map(course => course.innerText.trim()).join('\n');
+
+            return {
+                name: studentName,
+                age: studentAge,
+                school: studentSchool,
+                courses: studentCourses
+            };
+        });
+
+        // Close the browser
+        await browser.close();
+
+        if (!studentData.name || !studentData.age || !studentData.school) {
             return 'No student data found for this registration number and first name.';
         }
 
-        // Format the result
+        // Format the result message
         const resultMessage = `
-            *Student Name:* ${studentName}
-            *Age:* ${studentAge}
-            *School:* ${studentSchool}
-            *Courses:*\n${studentCourses}
+            *Student Name:* ${studentData.name}
+            *Age:* ${studentData.age}
+            *School:* ${studentData.school}
+            *Courses:*\n${studentData.courses}
         `;
 
         return resultMessage;
     } catch (error) {
-        console.error('Error fetching or parsing the result page:', error);
+        console.error('Error fetching student data:', error);
         return 'Sorry, I couldn\'t fetch the student information. Please try again later.';
     }
 }
