@@ -1,68 +1,81 @@
-require("dotenv").config();
-const express = require("express");
-const axios = require("axios");
-const TelegramBot = require("node-telegram-bot-api");
+const TelegramBot = require('node-telegram-bot-api');
+const fetch = require('node-fetch');
 
-const app = express();
-app.use(express.json()); // Parse JSON requests
+// Replace with your bot token from BotFather
+const token = 'YOUR_BOT_TOKEN';
+const bot = new TelegramBot(token, { polling: true });
 
-const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const WEBHOOK_URL = process.env.WEBHOOK_URL; // Your public URL (from Ngrok, Vercel, or a VPS)
+// Define the URL for fetching student results
+const baseUrl = 'https://sw.ministry.et/student-result/';
 
-const bot = new TelegramBot(TOKEN);
-bot.setWebHook(`${WEBHOOK_URL}/bot${TOKEN}`);
-
-// Function to fetch results
-async function getResult(registrationId, firstName) {
+// Function to fetch student result based on registration number and first name
+async function getStudentResult(registrationNumber, firstName) {
+    const url = `${baseUrl}${registrationNumber}?first_name=${firstName}&qr=`;
+    
     try {
-        const url = `https://sw.ministry.et/student-result/${registrationId}?first_name=${firstName}&qr=`;
-        const headers = { "User-Agent": "Mozilla/5.0", "Accept": "application/json" };
-
-        const response = await axios.get(url, { headers });
-
-        if (response.status === 200) {
-            const data = response.data;
-            const resultText = data?.result || "❌ No result found.";
-            const imageUrl = data?.photo_url; // Ensure this key is correct
-            return { resultText, imageUrl };
-        }
+        const response = await fetch(url);
+        const data = await response.json();
+        return data;
     } catch (error) {
-        return { resultText: "❌ Error fetching results.", imageUrl: null };
+        console.error('Error fetching student data:', error);
+        return null;
     }
 }
 
-// Webhook endpoint
-app.post(`/bot${TOKEN}`, async (req, res) => {
-    const { message } = req.body;
+// Handle incoming messages from users
+bot.onText(/\/start/, (msg) => {
+    const chatId = msg.chat.id;
+    const text = 'Welcome! Send me a registration number and a first name to fetch the student result.';
+    bot.sendMessage(chatId, text);
+});
 
-    if (message && message.text) {
-        const chatId = message.chat.id;
-        const userInput = message.text.trim();
+// Handle registration number and first name input
+bot.onText(/\/result (\d+) (\w+)/, async (msg, match) => {
+    const chatId = msg.chat.id;
+    const registrationNumber = match[1]; // 7 digit registration number
+    const firstName = match[2]; // first name
 
-        // Expect input in "ID FirstName" format
-        const parts = userInput.split(" ");
-        if (parts.length !== 2) {
-            bot.sendMessage(chatId, "⚠️ Please send: Registration Number and First Name (e.g., '0099617 John').");
-            return res.send();
-        }
+    // Fetch student result
+    const studentData = await getStudentResult(registrationNumber, firstName);
 
-        const [registrationId, firstName] = parts;
-        const { resultText, imageUrl } = await getResult(registrationId, firstName);
+    if (studentData) {
+        // Build the message to send to the user
+        const { student, courses } = studentData;
+        const studentInfo = `
+            *Student Name:* ${student.name}
+            *Age:* ${student.age}
+            *School:* ${student.school}
+            *Woreda:* ${student.woreda}
+            *Zone:* ${student.zone}
+            *Language:* ${student.language}
+            *Gender:* ${student.gender}
+            *Nationality:* ${student.nationality}
+        `;
+        
+        // Prepare the courses list
+        const coursesList = courses.map(course => course.name).join('\n');
 
-        // Send result text
-        await bot.sendMessage(chatId, `📄 Result: ${resultText}`);
+        // Send the student's info with inline buttons and photo
+        const message = `
+            ${studentInfo}
+            \n*Courses:*\n${coursesList}
+        `;
 
-        // Send student photo if available
-        if (imageUrl) {
-            await bot.sendPhoto(chatId, imageUrl);
-        }
+        bot.sendPhoto(chatId, student.photo, {
+            caption: message,
+            parse_mode: 'Markdown'
+        });
 
-        return res.send();
+    } else {
+        bot.sendMessage(chatId, 'Sorry, I couldn\'t fetch the student information. Please try again later.');
     }
 });
 
-// Start Express server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
+// Handle other commands and errors
+bot.on('message', (msg) => {
+    const chatId = msg.chat.id;
+
+    if (!msg.text.startsWith('/result')) {
+        bot.sendMessage(chatId, 'Please send a valid command. Use /result <registration_number> <first_name> to get results.');
+    }
 });
