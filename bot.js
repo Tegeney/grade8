@@ -1,81 +1,40 @@
+require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
-const fetch = require('node-fetch');
 
-// Replace with your bot token from BotFather
-const token = 'YOUR_BOT_TOKEN';
-const bot = new TelegramBot(token, { polling: true });
-
-// Define the URL for fetching student results
-const baseUrl = 'https://sw.ministry.et/student-result/';
-
-// Function to fetch student result based on registration number and first name
-async function getStudentResult(registrationNumber, firstName) {
-    const url = `${baseUrl}${registrationNumber}?first_name=${firstName}&qr=`;
-    
-    try {
-        const response = await fetch(url);
-        const data = await response.json();
-        return data;
-    } catch (error) {
-        console.error('Error fetching student data:', error);
-        return null;
-    }
+// Check if the bot token is available in the environment
+const token = process.env.TELEGRAM_BOT_TOKEN;
+if (!token) {
+  console.error('Error: No bot token found in .env file!');
+  process.exit(1); // Exit if token is missing
 }
 
-// Handle incoming messages from users
-bot.onText(/\/start/, (msg) => {
-    const chatId = msg.chat.id;
-    const text = 'Welcome! Send me a registration number and a first name to fetch the student result.';
-    bot.sendMessage(chatId, text);
-});
+// Initialize the bot with polling
+const bot = new TelegramBot(token, { polling: true });
 
-// Handle registration number and first name input
-bot.onText(/\/result (\d+) (\w+)/, async (msg, match) => {
-    const chatId = msg.chat.id;
-    const registrationNumber = match[1]; // 7 digit registration number
-    const firstName = match[2]; // first name
+// Log that the bot is up and running
+console.log('Bot is now polling...');
 
-    // Fetch student result
-    const studentData = await getStudentResult(registrationNumber, firstName);
-
-    if (studentData) {
-        // Build the message to send to the user
-        const { student, courses } = studentData;
-        const studentInfo = `
-            *Student Name:* ${student.name}
-            *Age:* ${student.age}
-            *School:* ${student.school}
-            *Woreda:* ${student.woreda}
-            *Zone:* ${student.zone}
-            *Language:* ${student.language}
-            *Gender:* ${student.gender}
-            *Nationality:* ${student.nationality}
-        `;
-        
-        // Prepare the courses list
-        const coursesList = courses.map(course => course.name).join('\n');
-
-        // Send the student's info with inline buttons and photo
-        const message = `
-            ${studentInfo}
-            \n*Courses:*\n${coursesList}
-        `;
-
-        bot.sendPhoto(chatId, student.photo, {
-            caption: message,
-            parse_mode: 'Markdown'
-        });
-
-    } else {
-        bot.sendMessage(chatId, 'Sorry, I couldn\'t fetch the student information. Please try again later.');
-    }
-});
-
-// Handle other commands and errors
+// Handle messages
 bot.on('message', (msg) => {
     const chatId = msg.chat.id;
+    console.log(`Received message from ${msg.chat.username}: ${msg.text}`);
+    bot.sendMessage(chatId, 'I received your message!');
+});
 
-    if (!msg.text.startsWith('/result')) {
-        bot.sendMessage(chatId, 'Please send a valid command. Use /result <registration_number> <first_name> to get results.');
-    }
+// Handle polling errors
+bot.on('polling_error', (error) => {
+    console.error('Polling Error:', error);
+});
+
+// You can add more handlers here to customize bot functionality
+// For example, handling specific commands or texts
+
+bot.onText(/\/start/, (msg) => {
+    const chatId = msg.chat.id;
+    bot.sendMessage(chatId, 'Hello, I am your bot!');
+});
+
+bot.onText(/\/help/, (msg) => {
+    const chatId = msg.chat.id;
+    bot.sendMessage(chatId, 'I am here to help you!');
 });
