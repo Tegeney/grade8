@@ -8,7 +8,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Telegram Bot Token from BotFather
-const token = process.env.TELEGRAM_BOT_TOKEN;
+const token = '1217681880:AAHCLorCihA2oyDjIrKzY_QgdBcyxpJtTJI'; // Your provided bot token
 const bot = new TelegramBot(token);
 
 // Telegram Webhook URL
