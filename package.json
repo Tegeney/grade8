@@ -1,18 +1,14 @@
 {
-  "name": "telegram-bot-puppeteer",
-  "version": "1.0.0",
-  "description": "A Telegram bot that fetches student results using Puppeteer.",
-  "main": "bot.js",
-  "scripts": {
-    "start": "node bot.js"
-  },
-  "dependencies": {
-    "node-telegram-bot-api": "^0.56.0",
-    "puppeteer": "^20.0.0"
-  },
-  "engines": {
-    "node": ">=14.0.0"
-  },
-  "author": "Your Name",
-  "license": "MIT"
-}
+     "name": "student-result-bot",
+     "version": "1.0.0",
+     "description": "A Telegram bot to fetch student results.",
+     "main": "bot.js",
+     "scripts": {
+       "start": "node bot.js"
+     },
+     "dependencies": {
+       "node-telegram-bot-api": "^0.56.0",
+       "axios": "^0.21.1",
+       "dotenv": "^10.0.0"
+     }
+   }
