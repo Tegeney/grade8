@@ -1,17 +1,13 @@
 {
   "name": "telegram-bot",
   "version": "1.0.0",
-  "description": "Telegram Bot for fetching student results",
+  "description": "A simple Telegram bot",
   "main": "bot.js",
   "scripts": {
     "start": "node bot.js"
   },
   "dependencies": {
-    "node-telegram-bot-api": "^0.50.0",
-    "dotenv": "^16.0.0",
-    "axios": "^1.4.0",
-    "node-fetch": "^3.0.0"
-  },
-  "author": "Your Name",
-  "license": "ISC"
+    "dotenv": "^10.0.0",
+    "node-telegram-bot-api": "^0.55.0"
+  }
 }
