@@ -1,21 +1,17 @@
 {
-  "name": "telegram-bot-webhook",
+  "name": "telegram-bot",
   "version": "1.0.0",
-  "description": "Telegram Bot with Webhook for fetching student results",
+  "description": "Telegram bot to fetch student results using Puppeteer",
   "main": "bot.js",
   "scripts": {
     "start": "node bot.js"
   },
   "dependencies": {
-    "express": "^4.17.1",
-    "body-parser": "^1.19.0",
-    "node-fetch": "^2.6.1",
-    "dotenv": "^10.0.0",
-    "node-telegram-bot-api": "^0.51.0"
+    "node-telegram-bot-api": "^0.56.0",
+    "puppeteer": "^20.0.0"
   },
-  "devDependencies": {},
   "engines": {
-    "node": "14.x"
+    "node": ">=14.0.0"
   },
   "author": "Your Name",
   "license": "MIT"
